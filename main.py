@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from agents.supervisor import ExamSupervisor
 from agents.reporter import ReporterAgent
-from data.mock_exam3 import MOCK_EXAM_PAPER, MOCK_STUDENT_SUBMISSION
+from data.mock_exam2 import MOCK_EXAM_PAPER, MOCK_STUDENT_SUBMISSION
 
 load_dotenv()
 
@@ -31,16 +31,34 @@ def run_demo():
             if "questions" in item:
                 print(f"--- Scanning Sub-Questions for {q_id} ---")
                 
+                passage_state= {
+                    "session_id": session_id,
+                    "q_id": q_id,
+                    "q_text": passage_text,
+                    "q_type": "RC_PASSAGE",
+                    "correct_answer": "",
+                    "pos_marks": 0,
+                    "neg_marks": 0,
+                    "student_answer": "",
+                    "parent_hash": current_parent_hash
+                }
+
+                passage_test= supervisor.graph.invoke(passage_state)
+                if not passage_test.get("is_safe"):
+                    print(f"[🚨 THREAT DETECTED] RC Passage {q_id} quarantined")
+                    current_parent_hash= passage_test["new_commit_hash"]
+                    print(f"Commit Hash: {current_parent_hash}")
+                    continue
+
                 for sub_q in item["questions"]:
                     sub_id = sub_q["q_id"]
                     print(f"\nProcessing Sub-Question {sub_id}...")
 
-                    full_context_text = f"Passage:\n{passage_text}\n\nQuestion:\n{sub_q.get('text', '')}"
-
                     sub_state = {
                         "session_id": session_id,
                         "q_id": sub_id,
-                        "q_text": full_context_text,
+                        "q_text": sub_q.get("text", ""),
+                        "q_type": sub_q.get("type", "MCQ_SINGLE"),
                         "correct_answer": sub_q.get("correct_answer", ""),
                         "pos_marks": sub_q.get("positive_marks", 0),
                         "neg_marks": sub_q.get("negative_marks", 0),
@@ -70,6 +88,7 @@ def run_demo():
                 "session_id": session_id,
                 "q_id": q_id,
                 "q_text": item.get("text", ""),
+                "q_type": item.get("type", "MCQ_SINGLE"),
                 "correct_answer": item.get("correct_answer", ""),
                 "pos_marks": item.get("positive_marks", 0),
                 "neg_marks": item.get("negative_marks", 0),

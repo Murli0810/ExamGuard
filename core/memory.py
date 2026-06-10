@@ -59,7 +59,7 @@ class VersionedMemory:
             
             if to_invalidate:
                 placeholders= ','.join('?' * len(to_invalidate))
-                cursor.execute(f'''UPDATE commits SET is_valid = 0 WHERE commit_hash IN {placeholders}''', tuple(to_invalidate))
+                cursor.execute(f'''UPDATE commits SET is_valid = 0 WHERE commit_hash IN ({placeholders})''', tuple(to_invalidate))
                 conn.commit()
     
     def get_session_history(self, session_id: str) -> list:
@@ -74,7 +74,7 @@ class VersionedMemory:
             columns= [description[0] for description in cursor.description]
             return [dict(zip(columns, row)) for row in rows]
     
-    def get_session_score(self, session_id: str) -> str:
+    def get_session_score(self, session_id: str) -> int:
         """Deterministically calculates the total score by parsing valid grading payloads in Python."""
         with sqlite3.connect(self.db_path) as conn:
             cursor= conn.cursor()
@@ -89,6 +89,12 @@ class VersionedMemory:
                 except (json.JSONDecodeError, KeyError, TypeError):
                     continue
             return total_score
+    def get_threat_count(self, session_id: str) -> int:
+        """Deterministically calculates the total no. of threats by parsing valid payloads in Python."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor= conn.cursor()
+            cursor.execute('''SELECT COUNT(*) FROM commits WHERE session_id = ? AND action_type = 'QUARANTINE' ''', (session_id,))
+            return cursor.fetchone()[0]
 
 
             

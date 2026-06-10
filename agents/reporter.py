@@ -5,7 +5,6 @@ from langchain_core.prompts import ChatPromptTemplate
 
 class ReportSummary(BaseModel):
     executive_summary: str = Field(description="A brief 2-3 sentence overview of the student's performance and any security incidents.")
-    threats_detected: int = Field(description="Total number of quarantined/flagged questions.")
 class ReporterAgent():
     def __init__(self, memory_module):
         self.memory= memory_module
@@ -30,9 +29,10 @@ class ReporterAgent():
             audit_log_str= json.dumps(session_history, indent=2)
             llm_result= self.chain.invoke({"audit_log": audit_log_str})
             deterministic_score = self.memory.get_session_score(session_id)
+            threat_count= self.memory.get_threat_count(session_id)
             return {
                 "executive_summary": llm_result.executive_summary,
-                "threats_detected": llm_result.threats_detected,
+                "threats_detected": threat_count,
                 "final_recommended_score": deterministic_score
             }
         except Exception as e:

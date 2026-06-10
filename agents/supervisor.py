@@ -13,6 +13,7 @@ class QuestionState(TypedDict):
     pos_marks: int
     neg_marks: int
     student_answer: str
+    q_type: str
 
     #Updated by Auditor
     is_safe: Optional[bool]
@@ -44,7 +45,8 @@ class ExamSupervisor:
                 return {"is_safe": False, "flag_reason": "Heuristic scan detected injection pattern."}
             
             #LLM Audit
-            audit_result = self.auditor.scan(state["q_text"])
+            sandboxed_text = ContextSandbox.wrap_untrusted_content(state["q_text"])
+            audit_result = self.auditor.scan(sandboxed_text)
             return {
                 "is_safe": audit_result.is_clean,
                 "flag_reason": audit_result.flagged_reason
@@ -52,16 +54,30 @@ class ExamSupervisor:
         
         #2.evaluate node
         def evaluate_node(state: QuestionState):
-            eval_result= self.evaluator.evaluate(
+
+            if state["q_type"] == "TITA":
+                if state["student_answer"].strip() == state["correct_answer"].strip():
+                    return {
+                        "score": state["pos_marks"],
+                        "justification": "TITA: Exact match."
+                    }
+                else:
+                    return {
+                        "score": 0,
+                        "justification": "TITA: NOT match."
+                    }
+            else:
+                eval_result= self.evaluator.evaluate(
                 state["correct_answer"],
                 state["pos_marks"],
                 state["neg_marks"],
                 state["student_answer"]
-            )
-            return {
+                )
+                return {
                 "score": eval_result.score,
                 "justification": eval_result.justification
-            }
+                }
+
         
         #3.memory node
         def memory_node(state: QuestionState):
@@ -87,7 +103,7 @@ class ExamSupervisor:
         workflow.add_node("evaluate", evaluate_node)
         workflow.add_node("memory", memory_node)
         
-        workflow.set_entry_point("audit")
+        workflow.add_edge(START, "audit")
         workflow.add_conditional_edges("audit",route_after_audit, {"evaluate": "evaluate", "memory": "memory"})
         workflow.add_edge("evaluate","memory")
         workflow.add_edge("memory", END)
