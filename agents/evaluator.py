@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
 class GradeResult(BaseModel):
@@ -8,16 +8,16 @@ class GradeResult(BaseModel):
 
 class EvaluatorAgent:
     def __init__(self):
-        self.llm= ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0).with_structured_output()
+        self.llm= ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0, max_retries=3).with_structured_output(GradeResult)
 
         self.prompt= ChatPromptTemplate.from_messages([
             ("system","""You are an inflexible, highly accurate Evaluator Agent.
              Your sole purpose is to compare student's answer against the correct answer and apply the mathematical grading rubric.
              
              Strict Grading Rules:
-             1. EXACT MATCH: If the student answer matches the correct answer perfectly, award the exact 'Positive Marks' value.
-             2. INCORRECT MATCH: If the student answer does not match the correct answer, award the exact 'Negative Marks' value.
-             3. NO ANSWER: If the student answer is missing, empty, or 'skipped', award 0 marks.
+             1. EXACT MATCH: If the student answer matches the correct answer perfectly, your 'score' MUST be exactly {pos_marks}.
+             2. INCORRECT MATCH: If the student answer does not match the correct answer, your 'score' MUST be exactly {neg_marks}.
+             3. NO ANSWER: If the student answer is missing, empty, or 'skipped', your 'score' MUST be 0.
              
              Do NOT hallucinate decimal scores or ignore the provided rubric values."""),
              ("human","""
@@ -34,14 +34,14 @@ class EvaluatorAgent:
         """Executes the grading logic with fail-secure error handling."""
         try:
             result= self.chain.invoke({
-                "correct_answer": str(correct_answer).strip(),
                 "pos_marks": pos_marks,
                 "neg_marks": neg_marks,
+                "correct_answer": str(correct_answer).strip(),
                 "student_answer": str(student_answer).strip()
             })
             return result
         except Exception as e:
             return GradeResult(
                 score=0,
-                justification=f"Evaluation aborted due to system error: {str(e)}"
+                justification=f"Evaluation aborted due to system error after retries: {str(e)}"
             )

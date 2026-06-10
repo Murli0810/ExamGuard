@@ -4,7 +4,7 @@ import json
 from  datetime import datetime
 
 class VersionedMemory:
-    def __init__(self, db_path="ExamGuard_memory.db"):
+    def __init__(self, db_path="examguard_memory.db"):
         self.db_path= db_path
         self._initialize_db()
     
@@ -38,27 +38,57 @@ class VersionedMemory:
         with sqlite3.connect(self.db_path) as conn:
             cursor= conn.cursor()
             cursor.execute('''
-                INSERT INTO commits (commit_hash, parent_hash, timestamp, session_id, action_type, payload, is_valid)
-                           VALUES(?, ?, ?, ?, ?, ?, 1)
-                        '''),(commit_hash, parent_hash, timestamp, session_id, action_type, json.dumps(payload))
+                INSERT INTO commits (commit_hash, parent_hash, timestamp, session_id, action_type, payload, is_valid) VALUES(?,?,?,?,?,?,1)''',(commit_hash, parent_hash, timestamp, session_id, action_type, json.dumps(payload)))
             conn.commit()
 
         return commit_hash
 
-    def rollback(self, commit_hash: str):
-        """Invalidates the specified commit and all subsequent commits descending from it."""
+    def rollback(self, commit_hash: str, session_id: str):
+        """Invalidates all commits that occurred strictly after the target commit_hash."""
         with sqlite3.connect(self.db_path) as conn:
             cursor= conn.cursor()
-            cursor.execute('SELECT timestamp FROM commits WHERE commit_hash = ?)', (commit_hash))
-            result= cursor.fetchone()
+            cursor.execute('''SELECT commit_hash FROM commits WHERE session_id = ? ORDER BY timestamp DESC''',(session_id,))
+            rows = cursor.fetchall()
+            to_invalidate= []
 
-            if result:
-                compromised_time= result[0]
-                cursor.execute('''
-                    UPDATE commits 
-                    SET is_valid = 0 
-                    WHERE timestamp >= ?
-                    ''', (compromised_time,))
-                conn.commit() 
+            for row in rows:
+                current_hash= row[0]
+                if current_hash == commit_hash:
+                    break
+                to_invalidate.append(current_hash)
+            
+            if to_invalidate:
+                placeholders= ','.join('?' * len(to_invalidate))
+                cursor.execute(f'''UPDATE commits SET is_valid = 0 WHERE commit_hash IN {placeholders}''', tuple(to_invalidate))
+                conn.commit()
+    
+    def get_session_history(self, session_id: str) -> list:
+        """Retrieves the full chronological commit history for a specific session."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor= conn.cursor()
+            cursor.execute('''SELECT commit_hash, parent_hash, timestamp, action_type, payload, is_valid 
+                FROM commits 
+                WHERE session_id = ? 
+                ORDER BY timestamp ASC''', (session_id,))
+            rows= cursor.fetchall()
+            columns= [description[0] for description in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+    
+    def get_session_score(self, session_id: str) -> str:
+        """Deterministically calculates the total score by parsing valid grading payloads in Python."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor= conn.cursor()
+            cursor.execute('''SELECT payload FROM commits WHERE session_id = ? AND is_valid = 1 AND action_type = 'GRADE' ''', (session_id,))
+            rows = cursor.fetchall()
+            total_score= 0
+
+            for row in rows:
+                try:
+                    payload_dict= json.loads(row[0])
+                    total_score += int(payload_dict.get("score", 0))
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    continue
+            return total_score
+
 
             
