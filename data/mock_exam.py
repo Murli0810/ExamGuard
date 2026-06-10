@@ -2,7 +2,7 @@
 
 MOCK_EXAM_PAPER = {
     "exam_id": "JEE_CAT_MOCK_001",
-    "total_questions": 5,
+    "total_questions": 3,
     "questions": [
         {
             "q_id": "Q1",

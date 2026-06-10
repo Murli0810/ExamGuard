@@ -28,7 +28,7 @@ def main():
         if commit['action_type'] == 'GRADE':
             summary= f"Q-ID: {payload.get('q_id')} | Awarded Score: {payload.get('score')}"
         else:
-            summary= f"Q-ID: {payload.get('q_id')} | Flagged Reason: {payload.get('flag_reason')[:40]}..."
+            summary= f"Q-ID: {payload.get('q_id')} | Flagged Reason: {(payload.get('flag_reason') or 'N/A')[:40]}..."
 
         print(f"{commit['commit_hash']:<15} | {commit['action_type']:<12} | {status:<8} | {summary}")
 
@@ -45,28 +45,32 @@ def main():
     if confirm.lower() == 'yes':
         memory.rollback(target_hash, session_id)
         print(f"\n✅ State successfully restored. Commits following {target_hash} have been invalidated.")
+        
+        new_score = memory.get_session_score(session_id)
+        print(f"📊 Recalculated Score: {new_score}")
+
+        print("*" * 50)
+        print("UPDATED HISTORY AFTER ROLLBACK")
+        print("*" * 50)
+
+        updated_history = memory.get_session_history(session_id)
+        print("-" * 75)
+        print(f"{'COMMIT HASH':<15} | {'ACTION TYPE':<12} | {'VALIDITY':<8} | {'SUMMARY'}")
+        print("-" * 75)
+        for commit in updated_history:
+            payload= json.loads(commit['payload'])
+            status= "ACTIVE" if commit['is_valid'] == 1 else 'REJECTED'
+
+            if commit['action_type'] == 'GRADE':
+                summary= f"Q-ID: {payload.get('q_id')} | Awarded Score: {payload.get('score')}"
+            else:
+                summary= f"Q-ID: {payload.get('q_id')} | Flagged Reason: {payload.get('flag_reason')[:40]}..."
+
+            print(f"{commit['commit_hash']:<15} | {commit['action_type']:<12} | {status:<8} | {summary}")
 
     else:
         print("\nOperation cancelled.")
     
-    print("*" * 50)
-    print("UPDATED HISTORY AFTER ROLLBACK")
-    print("*" * 50)
-
-    updated_history = memory.get_session_history(session_id)
-    print("-" * 75)
-    print(f"{'COMMIT HASH':<15} | {'ACTION TYPE':<12} | {'VALIDITY':<8} | {'SUMMARY'}")
-    print("-" * 75)
-    for commit in updated_history:
-        payload= json.loads(commit['payload'])
-        status= "ACTIVE" if commit['is_valid'] == 1 else 'REJECTED'
-
-        if commit['action_type'] == 'GRADE':
-            summary= f"Q-ID: {payload.get('q_id')} | Awarded Score: {payload.get('score')}"
-        else:
-            summary= f"Q-ID: {payload.get('q_id')} | Flagged Reason: {payload.get('flag_reason')[:40]}..."
-
-        print(f"{commit['commit_hash']:<15} | {commit['action_type']:<12} | {status:<8} | {summary}")
 
 if __name__ == "__main__":
     main()

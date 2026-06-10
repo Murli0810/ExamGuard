@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from agents.supervisor import ExamSupervisor
 from agents.reporter import ReporterAgent
-from data.mock_exam2 import MOCK_EXAM_PAPER, MOCK_STUDENT_SUBMISSION
+from data.mock_exam import MOCK_EXAM_PAPER, MOCK_STUDENT_SUBMISSION
 
 load_dotenv()
 
