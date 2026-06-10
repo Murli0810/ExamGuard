@@ -28,7 +28,7 @@ def main():
         if commit['action_type'] == 'GRADE':
             summary= f"Q-ID: {payload.get('q_id')} | Awarded Score: {payload.get('score')}"
         else:
-            summary= f"Q-ID: {payload.get('q_id')} | Flagged Reason: {(payload.get('flag_reason') or 'N/A')[:40]}..."
+            summary= f"Q-ID: {payload.get('q_id')} | Flagged Reason: {(payload.get('flag_reason') or 'N/A')[:45]}..."
 
         print(f"{commit['commit_hash']:<15} | {commit['action_type']:<12} | {status:<8} | {summary}")
 
