@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 
@@ -90,7 +91,7 @@ async def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
                     
                     sub_result = supervisor.graph.invoke(sub_state)
                     current_parent_hash = sub_result["new_commit_hash"]
-                    time.sleep(4)
+                    asyncio.sleep(4)
                     
         else:
             
@@ -109,7 +110,7 @@ async def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
 
             result_state = supervisor.graph.invoke(initial_state)
             current_parent_hash = result_state["new_commit_hash"]
-            time.sleep(4)
+            asyncio.sleep(4)
 
     raw_history= supervisor.memory.get_session_history(session_id)
     final_report= reporter.generate_report(session_id, raw_history)
