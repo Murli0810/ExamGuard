@@ -21,7 +21,7 @@ const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Threats", url: "/threats", icon: AlertTriangle },
   { title: "Memory Log", url: "/memory", icon: GitCommit },
-  { title: "Reports", url: "/reports/USER_999_1e54dc", icon: FileText },
+  { title: "Reports", url: "/reports", icon: FileText },
   { title: "Review Queue", url: "/review", icon: Inbox },
 ];
 

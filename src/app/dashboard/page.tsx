@@ -6,7 +6,7 @@ import { PipelineBar } from "@/components/pipeline-bar";
 import { StatusChip } from "@/components/status-chip";
 import { triggerExamPipeline } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-
+import { useRouter } from "next/navigation";
 
 const initialStats = [
   { label: "Active Sessions", value: "12", delta: "stable", icon: Activity, accent: "primary" as const },
@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [liveFeed, setLiveFeed] = useState<any[]>([]);
   const [sessionData, setSessionData] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleRunPipeline = async () => {
     setIsProcessing(true);
@@ -62,6 +63,8 @@ export default function Dashboard() {
         { id: Date.now() + 1, ts: new Date().toLocaleTimeString(), agent: "Reporter", msg: `Generated Report for ${response.session_id}`, status: "CLEAN" },
         ...prev
       ]);
+      router.push(`/reports/${response.session_id}`);
+
     } catch (error) {
       setLiveFeed(prev => [
         { id: Date.now() + 2, ts: new Date().toLocaleTimeString(), agent: "System", msg: `API Connectivity Error: ${String(error)}`, status: "FLAGGED" },
