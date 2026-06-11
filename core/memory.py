@@ -95,6 +95,18 @@ class VersionedMemory:
             cursor= conn.cursor()
             cursor.execute('''SELECT COUNT(*) FROM commits WHERE session_id = ? AND action_type = 'QUARANTINE' ''', (session_id,))
             return cursor.fetchone()[0]
+    
+    def get_all_threats(self) -> list:
+        """Retrieves all quarantined commits globally across all sessions."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor= conn.cursor()
+            cursor.execute('''
+                        SELECT commit_hash, session_id, timestamp, action_type, payload, is_valid
+                           FROM commits
+                           WHERE action_type = 'QUARANTINE'
+                           ORDER BY timestamp DESC ''')
 
-
+            rows= cursor.fetchall()
+            columns= [description[0] for description in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
             
