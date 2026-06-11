@@ -66,6 +66,13 @@ class ExamSupervisor:
                         "score": 0,
                         "justification": "TITA: NOT match."
                     }
+            elif state["q_type"] == "RC_PASSAGE":
+                return {
+                    "score": 0,
+                    "jusitifictaion": "RC_PASSAGE container scanned safely."
+                }
+                
+        
             else:
                 eval_result= self.evaluator.evaluate(
                 state["correct_answer"],

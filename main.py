@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import uuid
 from dotenv import load_dotenv
 
@@ -79,6 +80,7 @@ def run_demo():
                         print(f"Reason: {sub_result.get('flag_reason')}")
 
                     print(f"Commit Hash: {current_parent_hash}")
+                    time.sleep(3)
                     
         else:
             
@@ -111,6 +113,7 @@ def run_demo():
             
             print(f"Commit Hash: {current_parent_hash}")
             print("-" * 40)
+            time.sleep(3)
             
     print("\n" + "="*40)
     print("GENERATING EXAMINER AUDIT REPORT...")
