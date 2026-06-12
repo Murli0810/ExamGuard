@@ -1,5 +1,6 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
 import { useState, useEffect } from "react";
 import { GitCommit, RotateCcw, Search, Loader2 } from "lucide-react";
 import { StatusChip } from "@/components/status-chip";
