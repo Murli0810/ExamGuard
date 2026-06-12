@@ -69,7 +69,7 @@ class ExamSupervisor:
             elif state["q_type"] == "RC_PASSAGE":
                 return {
                     "score": 0,
-                    "jusitifictaion": "RC_PASSAGE container scanned safely."
+                    "justifictaion": "RC_PASSAGE container scanned safely."
                 }
                 
         

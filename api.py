@@ -138,7 +138,7 @@ async def execute_rollback(session_id: str, request: RollbackRequest) -> Dict[st
         raise HTTPException(status_code=400, detail="Target commit hash does not exist in this session.")
     
     supervisor.memory.rollback(request.target_hash, session_id)
-    new_score= supervisor.memory.get_session_history(session_id)
+    new_score= supervisor.memory.get_session_score(session_id)
 
     return {
         "status": "success",

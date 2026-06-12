@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GitCommit, RotateCcw, Search, Loader2 } from "lucide-react";
 import { StatusChip } from "@/components/status-chip";
 import { fetchSessionHistory, triggerStateRollback } from "@/lib/api-client";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function Memory() {
   const [sessionIdInput, setSessionIdInput] = useState("");
@@ -20,6 +20,16 @@ export default function Memory() {
   const [diff, setDiff] = useState<any | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
 
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const sid = searchParams.get("session");
+    if (sid) {
+      setSessionIdInput(sid);
+      loadHistory(sid);
+    }
+  }, []);
+
   // Fetches the chronological commit log from FastAPI
   const loadHistory = async (sid: string) => {
     if (!sid) return;
@@ -30,7 +40,7 @@ export default function Memory() {
       setActiveSession(sid);
     } catch (err) {
       console.error(err);
-      alert("Failed to load session history. Verify the Session ID is correct.");
+      toast.error("Session not found. Verify the Session ID.");
     } finally {
       setIsLoading(false);
     }
@@ -45,9 +55,10 @@ export default function Memory() {
       await loadHistory(activeSession); // Instantly refresh the ledger
     } catch (err) {
       console.error(err);
-      alert("Rollback failed to execute.");
+      toast.error("Rollback failed. Check the backend logs.");
     } finally {
       setIsRollingBack(false);
+      toast.success(`Rolled back to ${rollbackTarget.commit_hash.slice(0, 7)}`);
       setRollbackTarget(null);
     }
   };

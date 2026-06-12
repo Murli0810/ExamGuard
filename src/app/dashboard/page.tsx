@@ -98,7 +98,7 @@ export default function Dashboard() {
         {initialStats.map((s) => <StatCard key={s.label} s={s} />)}
       </div>
 
-      <PipelineBar />
+      <PipelineBar isProcessing={isProcessing} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="panel p-4 lg:col-span-2">

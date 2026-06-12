@@ -7,7 +7,7 @@ function nodeStyle(state: AgentState) {
   return { ring: "border-primary", dot: "bg-primary glow-green", text: "text-primary" };
 }
 
-export function PipelineBar() {
+export function PipelineBar({ isProcessing = false }: { isProcessing?: boolean }) {
   return (
     <div className="panel p-4">
       <div className="flex items-center justify-between mb-3">
@@ -16,14 +16,15 @@ export function PipelineBar() {
       </div>
       <div className="flex items-center gap-2 overflow-x-auto">
         {agents.map((a, i) => {
-          const s = nodeStyle(a.state);
+          const liveState = (isProcessing && a.name === "Auditor") ? "processing" : a.state;
+          const s = nodeStyle(liveState);
           return (
             <div key={a.name} className="flex items-center gap-2 shrink-0">
               <div className={cn("relative flex flex-col items-center gap-1 rounded-md border bg-surface-elevated px-4 py-3 min-w-[140px]", s.ring)}>
                 <span className={cn("h-2 w-2 rounded-full", s.dot)} />
                 <span className="text-xs font-medium">{a.name}</span>
                 <span className={cn("text-[9px] font-mono uppercase tracking-wider", s.text)}>
-                  {a.state === "processing" ? "● processing" : a.state === "flagged" ? "● flagged" : "● active"}
+                  {liveState === "processing" ? "● processing" : liveState === "flagged" ? "● flagged" : "● active"}
                 </span>
               </div>
               {i < agents.length - 1 && (

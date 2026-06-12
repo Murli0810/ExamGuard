@@ -51,7 +51,9 @@ export default function Report() {
           <h1 className="text-2xl font-semibold tracking-tight mt-1">Executive Session Report</h1>
           <p className="text-sm text-muted-foreground mt-2 max-w-3xl leading-relaxed">{reportData.executive_summary}</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded border border-primary/50 bg-primary/10 hover:bg-primary/20 px-3 py-2 text-xs font-mono uppercase tracking-wider text-primary">
+        <button 
+        onClick={()=> window.print()}
+        className="inline-flex items-center gap-2 rounded border border-primary/50 bg-primary/10 hover:bg-primary/20 px-3 py-2 text-xs font-mono uppercase tracking-wider text-primary">
           <Download className="h-3.5 w-3.5" /> Export PDF
         </button>
       </div>
