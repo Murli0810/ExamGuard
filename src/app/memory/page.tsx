@@ -1,6 +1,6 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { GitCommit, RotateCcw, Search, Loader2 } from "lucide-react";
 import { StatusChip } from "@/components/status-chip";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-export default function Memory() {
+function MemoryInner() {
   const [sessionIdInput, setSessionIdInput] = useState("");
   const [activeSession, setActiveSession] = useState("");
   const [liveCommits, setLiveCommits] = useState<any[]>([]);
@@ -53,13 +53,13 @@ export default function Memory() {
     setIsRollingBack(true);
     try {
       await triggerStateRollback(activeSession, rollbackTarget.commit_hash);
-      await loadHistory(activeSession); // Instantly refresh the ledger
+      await loadHistory(activeSession);
+      toast.success(`Rolled back to ${rollbackTarget.commit_hash.slice(0, 7)}`);
     } catch (err) {
       console.error(err);
       toast.error("Rollback failed. Check the backend logs.");
     } finally {
       setIsRollingBack(false);
-      toast.success(`Rolled back to ${rollbackTarget.commit_hash.slice(0, 7)}`);
       setRollbackTarget(null);
     }
   };
@@ -223,5 +223,13 @@ ${JSON.stringify(diff.payload, null, 2)}
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function Memory() {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted-foreground font-mono text-xs">Loading...</div>}>
+      <MemoryInner />
+    </Suspense>
   );
 }
