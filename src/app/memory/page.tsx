@@ -4,18 +4,20 @@ import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { GitCommit, RotateCcw, Search, Loader2 } from "lucide-react";
 import { StatusChip } from "@/components/status-chip";
-import { fetchSessionHistory, triggerStateRollback } from "@/lib/api-client";
+import { fetchSessionHistory, triggerStateRollback, fetchRecentSessions } from "@/lib/api-client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
+
 function MemoryInner() {
   const [sessionIdInput, setSessionIdInput] = useState("");
   const [activeSession, setActiveSession] = useState("");
   const [liveCommits, setLiveCommits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<any[]>([]);
   
   const [rollbackTarget, setRollbackTarget] = useState<any | null>(null);
   const [diff, setDiff] = useState<any | null>(null);
@@ -29,7 +31,16 @@ function MemoryInner() {
       setSessionIdInput(sid);
       loadHistory(sid);
     }
-  }, []);
+    const loadRecent = async () => {
+      try {
+        const res = await fetchRecentSessions();
+        setRecentSessions(res.sessions || []);
+      } catch (e) {
+        console.error("Failed to load recent sessions");
+      }
+    };
+    loadRecent();
+  }, [searchParams]);
 
   // Fetches the chronological commit log from FastAPI
   const loadHistory = async (sid: string) => {
@@ -107,31 +118,68 @@ function MemoryInner() {
         </div>
       </div>
 
-      <div className="panel overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-surface-elevated border-b border-border">
-            <tr className="text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              <th className="px-4 py-3">Commit Hash</th>
-              <th className="px-4 py-3">Action Type</th>
-              <th className="px-4 py-3">Question ID</th>
-              <th className="px-4 py-3">Score</th>
-              <th className="px-4 py-3">Justification / Reason</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {liveCommits.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-xs font-mono text-muted-foreground">
-                  No commits loaded. Enter a valid Session ID to fetch the cryptographic ledger.
-                </td>
+      {!activeSession && !isLoading && recentSessions.length > 0 && (
+        <div className="mt-2">
+          <h3 className="text-sm font-mono text-muted-foreground mb-4 uppercase tracking-widest">Recent Executions</h3>
+          <div className="rounded-md border border-border bg-surface overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Session ID</th>
+                  <th className="px-4 py-3 text-left font-medium">Total Commits</th>
+                  <th className="px-4 py-3 text-left font-medium">Last Active</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {recentSessions.map((session) => (
+                  <tr 
+                    key={session.session_id} 
+                    className="hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setSessionIdInput(session.session_id);
+                      loadHistory(session.session_id);
+                    }}
+                  >
+                    <td className="px-4 py-3 font-mono text-primary">{session.session_id}</td>
+                    <td className="px-4 py-3">{session.commit_count}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {new Date(session.last_active).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeSession && (
+        <div className="panel overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-elevated border-b border-border">
+              <tr className="text-left text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3">Commit Hash</th>
+                <th className="px-4 py-3">Action Type</th>
+                <th className="px-4 py-3">Question ID</th>
+                <th className="px-4 py-3">Score</th>
+                <th className="px-4 py-3">Justification / Reason</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3"></th>
               </tr>
-            ) : (
-              liveCommits.map((c) => {
-                const payload = parsePayload(c.payload);
-                const status = getStatus(c);
-                const isRollbackable = c.is_valid === 1;
+            </thead>
+            <tbody className="divide-y divide-border">
+              {liveCommits.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-xs font-mono text-muted-foreground">
+                    No commits loaded. Enter a valid Session ID to fetch the cryptographic ledger.
+                  </td>
+                </tr>
+              ) : (
+                liveCommits.map((c) => {
+                  const payload = parsePayload(c.payload);
+                  const status = getStatus(c);
+                  const isRollbackable = c.is_valid === 1;
+                
 
                 return (
                   <tr key={c.commit_hash} className="hover:bg-accent/40 cursor-pointer transition-colors" onClick={() => setDiff({ commit: c, payload, status })}>
@@ -167,7 +215,8 @@ function MemoryInner() {
           </tbody>
         </table>
       </div>
-
+      )}
+      
       {/* Human-in-the-loop Rollback Confirmation Dialog */}
       <Dialog open={!!rollbackTarget} onOpenChange={(o) => !o && setRollbackTarget(null)}>
         <DialogContent className="bg-surface border-destructive/40">

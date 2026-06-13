@@ -16,7 +16,7 @@ export async function triggerExamPipeline(submissionPayload: any) {
 }
 
 export async function fetchSessionHistory(sessionId: string) {
-  const response = await fetch(`${API_BASE_URL}/history/${sessionId}`);
+  const response = await fetch(`${API_BASE_URL}/history/${sessionId}`, { cache: "no-store" });
   
   if (!response.ok) {
     throw new Error(`History Fetch Error: ${response.statusText}`);
@@ -40,7 +40,7 @@ export async function triggerStateRollback(sessionId: string, targetHash: string
 }
 
 export async function fetchGlobalThreats() {
-  const response = await fetch(`${API_BASE_URL}/threats`);
+  const response = await fetch(`${API_BASE_URL}/threats`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Threats Fetch Error: ${response.statusText}`);
   return response.json();
 }
@@ -48,5 +48,14 @@ export async function fetchGlobalThreats() {
 export async function fetchSessionReport(sessionId: string) {
   const response = await fetch(`${API_BASE_URL}/report/${sessionId}`);
   if (!response.ok) throw new Error(`Report Fetch Error: ${response.statusText}`);
+  return response.json();
+}
+
+export async function fetchRecentSessions() {
+  const response = await fetch(`${API_BASE_URL}/sessions`, { cache: "no-store" });
+  
+  if (!response.ok) {
+    throw new Error(`Sessions Fetch Error: ${response.statusText}`);
+  }
   return response.json();
 }

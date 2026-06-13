@@ -109,4 +109,18 @@ class VersionedMemory:
             rows= cursor.fetchall()
             columns= [description[0] for description in cursor.description]
             return [dict(zip(columns, row)) for row in rows]
+    
+    def get_recent_sessions(self, limit: int = 50) -> list:
+        """Fetches a list of recent unique sessions."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT session_id, COUNT(*) as commit_count, MAX(timestamp) as last_active
+                FROM commits
+                GROUP BY session_id
+                ORDER BY last_active DESC
+                LIMIT ?
+            ''', (limit,))
+            rows = cursor.fetchall()
+            return [{"session_id": r[0], "commit_count": r[1], "last_active": r[2]} for r in rows]
             

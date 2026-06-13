@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 from dotenv import load_dotenv
-import asyncio
 
 load_dotenv()
 
@@ -35,7 +34,7 @@ class RollbackRequest(BaseModel):
     target_hash: str
 
 @app.post("/api/grade")
-async def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
+def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
     """Processes a student submission through the multi-agent pipeline."""
     if not os.getenv("GROQ_API_KEY"):
         raise HTTPException(status_code=500, detail="GROQ_API_KEY environment variable missing.")
@@ -91,7 +90,7 @@ async def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
                     
                     sub_result = supervisor.graph.invoke(sub_state)
                     current_parent_hash = sub_result["new_commit_hash"]
-                    asyncio.sleep(4)
+                    time.sleep(2)
                     
         else:
             
@@ -110,7 +109,7 @@ async def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
 
             result_state = supervisor.graph.invoke(initial_state)
             current_parent_hash = result_state["new_commit_hash"]
-            asyncio.sleep(4)
+            time.sleep(2)
 
     raw_history= supervisor.memory.get_session_history(session_id)
     final_report= reporter.generate_report(session_id, raw_history)
@@ -121,7 +120,7 @@ async def process_exam(submission: ExamSubmission) -> Dict[str, Any]:
     }
 
 @app.get("/api/history/{session_id}")
-async def get_audit_trail(session_id: str) -> Dict[str, Any]:
+def get_audit_trail(session_id: str) -> Dict[str, Any]:
     """Fetches the chronological commit log for the Next.js UI."""
     history= supervisor.memory.get_session_history(session_id)
     if not history:
@@ -129,7 +128,7 @@ async def get_audit_trail(session_id: str) -> Dict[str, Any]:
     return {"session_id": session_id, "history": history}
 
 @app.post("/api/rollback/{session_id}")
-async def execute_rollback(session_id: str, request: RollbackRequest) -> Dict[str, Any]:
+def execute_rollback(session_id: str, request: RollbackRequest) -> Dict[str, Any]:
     """Triggers the human-in-the-loop state reversion from the frontend."""
     history= supervisor.memory.get_session_history(session_id)
     hash_exists= any(c['commit_hash'] == request.target_hash for c in history)
@@ -147,13 +146,13 @@ async def execute_rollback(session_id: str, request: RollbackRequest) -> Dict[st
     }
 
 @app.get("/api/threats")
-async def get_global_threats() -> Dict[str, Any]:
+def get_global_threats() -> Dict[str, Any]:
     """Fetches all flagged threats across all exam sessions."""
     threats= supervisor.memory.get_all_threats()
     return {"threats": threats}
 
 @app.get("/api/report/{session_id}")
-async def get_session_report(session_id: str) -> Dict[str, Any]:
+def get_session_report(session_id: str) -> Dict[str, Any]:
     """Generates the executive report and fetches the audit log for a specific session."""
     raw_history= supervisor.memory.get_session_history(session_id)
     if not raw_history:
@@ -167,5 +166,10 @@ async def get_session_report(session_id: str) -> Dict[str, Any]:
         "history": raw_history
     }
 
+@app.get("/api/sessions")
+def get_recent_sessions() -> Dict[str, Any]:
+    """Fetches the latest exam sessions for the dashboard memory log."""
+    sessions = supervisor.memory.get_recent_sessions()
+    return {"sessions": sessions}
             
     
