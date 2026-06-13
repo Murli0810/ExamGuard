@@ -2,18 +2,14 @@
 
 import { FileText } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { fetchRecentSessions, fetchSessionReport } from "@/lib/api-client";
-
+import { useRouter } from "next/navigation";
+import { fetchRecentSessions } from "@/lib/api-client";
 
 export default function ReportsIndex() {
 
   const router = useRouter();
   const [recentSessions, setRecentSessions] = useState<any[]>([]);
   const [report, setReport] = useState<any>(null);
-
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get("session");
 
   useEffect(() => {
     const loadRecent = async () => {
@@ -26,20 +22,6 @@ export default function ReportsIndex() {
     };
     loadRecent();
   }, []);
-
-  useEffect(() => {
-    if (sessionId) {
-      const loadReport = async () => {
-        try {
-          const reportData = await fetchSessionReport(sessionId);
-          setReport(reportData);
-        } catch (error) {
-          console.error("Failed to fetch report:", error);
-        }
-      };
-      loadReport();
-    }
-  }, [sessionId]);
 
   return (
     <div className="p-6 space-y-6">
